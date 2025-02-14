@@ -1,1 +1,42 @@
-venv
+# ⬇️ Environnement virtuel
+venv/
+.env
+*.env
+
+# ⬇️ Fichiers de configuration IDE
+.idea/
+.vscode/
+*.iml
+
+# ⬇️ Fichiers de compilation Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ⬇️ Logs et fichiers temporaires
+*.log
+logs/
+*.tmp
+*.swp
+.DS_Store
+
+# ⬇️ Dépendances et builds
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# ⬇️ Paramètres spécifiques à PyQt
+.ui_files/
+.moc/
+.qrc/
+*.qrc
+*.qrc.py
+*.qss
+
+# ⬇️ Caches et fichiers inutiles
+*.sqlite3
+*.db
+*.pid
+*.lock
