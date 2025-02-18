@@ -7,7 +7,7 @@ def create_menu(window):
     # Menu Fichier
     file_menu = menubar.addMenu("Fichier")
     quit_action = QAction("Quitter", window)
-    quit_action.triggered.connect(window.close)
+    quit_action.triggered.connect(window.quit_app)
     file_menu.addAction(quit_action)
 
     # Menu Outils

@@ -41,7 +41,6 @@ class PDFProcessor:
             rect = page.rect
             clip_top_right = pymupdf.Rect(rect.width - 100, 0, rect.width, 100)
             clip_bas_left = pymupdf.Rect(0, rect.height - 100, 100, rect.height)
-            print(self.pattern)
             if self.detect_highlighter(page.get_pixmap(alpha=True, dpi=300, matrix=mat, clip=clip_top_right), pattern=self.pattern, debug=self.debug) or \
                     self.detect_highlighter(page.get_pixmap(alpha=True, matrix=mat, clip=clip_bas_left), pattern=self.pattern, debug=self.debug):
                 split_indices.append(i)

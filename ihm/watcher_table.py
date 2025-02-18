@@ -3,7 +3,9 @@ from PyQt5.QtWidgets import (QTableWidget, QTableWidgetItem, QCheckBox, QPushBut
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
 from utils.tools import Tools
-from watchers.watcher import Watcher
+#from watchers.watcher import Watcher
+from watchers.watcher_manager import WatcherManager
+
 from threads.pdf_processor_thread import PDFProcessorThread  # Assurez-vous que ce fichier existe
 from .watcherConfigMenu import WatcherConfigMenu  # Ajouter cet import en haut du fichier
 
@@ -15,7 +17,7 @@ class WatcherTable(QTableWidget):
         self.setHorizontalHeaderLabels(["Source", "Destination", "Automatique", "Statut", "Run", "Delete", "Options"])
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.setStyleSheet(self.table_stylesheet())
-        self.watchers = []
+        self.watcher_manager = WatcherManager()  # Utilisation du gestionnaire unique
 
 
     def table_stylesheet(self):
@@ -54,6 +56,9 @@ class WatcherTable(QTableWidget):
 
         # Générer un ID unique si non fourni
         watcher_id = id if id else f'{row_position}_{int(time.time() * 1000000)}'
+
+        # Ajouter le watcher au WatcherManager
+        watcher = self.watcher_manager.add_watcher(watcher_id=watcher_id, input_dir=input_dir, output_dir=output_dir, auto=auto)
 
         # Stocker l'ID avec Qt.UserRole dans le premier élément
         input_item = self.create_table_item(input_dir)
@@ -105,8 +110,8 @@ class WatcherTable(QTableWidget):
             # Save Watcher Config
             Tools().set_pattern(watcher_id, input_dir=input_dir, output_dir=output_dir)
         # Création du watcher
-        watcher = Watcher(input_dir, output_dir, id=watcher_id, auto_mode=auto)
-        self.watchers.append((watcher, auto_checkbox, status_label, btn_run, btn_delete, progress_statut))
+        #watcher = Watcher(input_dir, output_dir, id=watcher_id, auto_mode=auto)
+        #self.watchers.append((watcher, auto_checkbox, status_label, btn_run, btn_delete, progress_statut))
 
         # Connecte le signal toggled de la case à cocher
         # Si auto on active la checkbox
@@ -117,6 +122,7 @@ class WatcherTable(QTableWidget):
         # Connexion des actions
         btn_run.clicked.connect(lambda: self.run_watcher(watcher=watcher))
         btn_delete.clicked.connect(lambda: self.delete_watcher(watcher.id))
+        print(len(self.watcher_manager.watchers))
 
     def create_table_item(self, text, center=False):
         item = QTableWidgetItem(text)
@@ -176,7 +182,7 @@ class WatcherTable(QTableWidget):
                 
             self.removeRow(row)
             # Mise à jour de la liste des watchers
-            self.watchers = [(w, *rest) for (w, *rest) in self.watchers if w.id != watcher_id]
+            self.watcher_manager.remove_watcher(watcher_id)
             
             # Supprimer la configuration du watcher
             tools = Tools()
@@ -218,11 +224,10 @@ class WatcherTable(QTableWidget):
                 background-color: {hover_color};
             }}
         """
-    def load_watchers_from_json(self, json_path="assets/patterns.json"):
+    def load_watchers_from_json(self):
         """Charge les watchers depuis un fichier JSON et les ajoute à l'interface."""
         try:
-            with open(json_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = Tools().load_patterns()
 
             for id, watcher in data.items():
                 if id!="DEFAULT":
