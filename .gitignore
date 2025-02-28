@@ -1,3 +1,5 @@
+#pattern.json
+assets/patterns.json
 # ⬇️ Environnement virtuel
 venv/
 .env
