@@ -174,16 +174,18 @@ class WatcherTable(QTableWidget):
         row = self.get_row_by_watcher_id(watcher_id)
         if row is not None:
             print(f"✅ Suppression du watcher {watcher_id} à la ligne {row}")
+
             # Arrêter le watcher s'il est en cours d'exécution
-            for watcher, *_ in self.watchers:
-                if watcher.id == watcher_id:
-                    watcher.stop()
-                    break
-                
+            watcher = self.watcher_manager.get_watcher(watcher_id)
+            if watcher:
+                watcher.stop()
+
+            # Supprimer la ligne du tableau
             self.removeRow(row)
-            # Mise à jour de la liste des watchers
+
+            # Supprimer le watcher du WatcherManager
             self.watcher_manager.remove_watcher(watcher_id)
-            
+
             # Supprimer la configuration du watcher
             tools = Tools()
             patterns = tools.load_patterns()
@@ -197,15 +199,11 @@ class WatcherTable(QTableWidget):
     def get_row_by_watcher_id(self, watcher_id):
         """Trouve la ligne correspondant à un watcher_id."""
         for row in range(self.rowCount()):
-            # Parcourir les watchers pour trouver celui qui correspond à cette ligne
-            for watcher, *_ in self.watchers:
-                if watcher.id == watcher_id:
-                    # Vérifier que le chemin d'entrée correspond à celui de la ligne
-                    input_item = self.item(row, 0)
-                    if input_item and input_item.text() == watcher.input_dir:
-                        print(f"✅ Watcher {watcher_id} trouvé à la ligne {row}")
-                        return row
-        
+            input_item = self.item(row, 0)
+            if input_item and input_item.data(Qt.UserRole) == watcher_id:
+                print(f"✅ Watcher {watcher_id} trouvé à la ligne {row}")
+                return row
+
         print(f"❌ Ligne non trouvée pour le watcher ID: {watcher_id}")
         return None
 

@@ -36,27 +36,30 @@ class Tools:
         return {}
 
     def save_patterns(self, patterns):
-        """Enregistre les patterns dans le fichier JSON en conservant un backup en cas d'erreur."""
+        """Enregistre les patterns en écrasant l'ancien fichier, avec un backup propre."""
         backup_file = self.pattern_file + ".bak"
-        try:
-            # Sauvegarde temporaire avant l'écriture
-            if os.path.exists(self.pattern_file):
-                os.rename(self.pattern_file, backup_file)
 
+        # Si le fichier original existe, on le sauvegarde proprement
+        if os.path.exists(self.pattern_file):
+            try:
+                os.replace(self.pattern_file, backup_file)  # Remplace sans erreur si le fichier existe déjà
+            except Exception as e:
+                print(f"⚠️ Impossible de créer le backup : {e}")
+
+        try:
             with open(self.pattern_file, "w") as file:
                 json.dump(patterns, file, indent=4)
-
             print("✅ Patterns sauvegardés avec succès.")
 
             # Suppression du backup après succès
             if os.path.exists(backup_file):
                 os.remove(backup_file)
-
         except Exception as e:
             print(f"❌ Erreur lors de l'enregistrement : {e}")
-            # Restaurer le fichier original en cas d'échec
+
+            # Restauration du backup uniquement si l'écriture échoue
             if os.path.exists(backup_file):
-                os.rename(backup_file, self.pattern_file)
+                os.replace(backup_file, self.pattern_file)
 
     def get_pattern(self, pattern_id):
         """Récupère un pattern par ID, sinon retourne le pattern par défaut."""

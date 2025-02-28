@@ -159,7 +159,7 @@ class PDFWatcherApp(QMainWindow):
 
     def minimize_to_tray(self):
         """Minimise l'application dans la barre des tâches (System Tray)."""
-        NotificationModal("Je travaille en arrière-plan !!", type_="Info", duration=3000, parent=self).exec_()
+        NotificationModal("Je travaille en arrière-plan !!", type_="Info", duration=2000, parent=self).exec_()
         self.saved_geometry = self.geometry()  # Enregistre la taille et position
         self.saved_state = self.windowState()  # Enregistre l'état (maximisé, normal)
         self.hide()
