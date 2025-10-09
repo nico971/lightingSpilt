@@ -8,27 +8,30 @@ from utils.tools import Tools
 class PDFProcessor:
     """Classe gérant le traitement des PDF : découpage et détection de surlignage."""
 
-    def __init__(self, input_dir, output_dir, pattern, debug):
-        self.input_dir = input_dir
-        self.output_dir = output_dir
-        pattern_data = Tools().get_pattern(pattern)
-        self.pattern = pattern_data["motif"] if pattern_data and "motif" in pattern_data else []
+    def __init__(self, input_dir, output_dir, pattern_id, debug):
         self.debug = debug
-        self.delete_source = pattern_data.get('delete_source', False) if pattern_data else False
+        pattern_data = Tools().load_configs(pattern_id) or {}
+
+        # Valeurs par défaut si absentes
+        self.pattern = pattern_data.get("motif", [])
+        self.delete_source = pattern_data.get("delete_source", False)
+        self.input_dir = pattern_data.get("input_dir", "")
+        self.output_dir = pattern_data.get("output_dir", "")
 
     def process(self):
         """Lance le traitement sur tous les fichiers PDF du dossier source."""
         for filename in os.listdir(self.input_dir):
             if filename.lower().endswith(".pdf"):
                 pdf_path = os.path.join(self.input_dir, filename)
-                self.split_pdf(pdf_path, self.output_dir)
-                # Supprimer le fichier source si l'option est activée
-                if self.delete_source:
-                    try:
+                try:
+                    success = self.split_pdf(pdf_path, self.output_dir)
+                    if success and self.delete_source:
                         os.remove(pdf_path)
-                        print(f"✅ Fichier source supprimé : {pdf_path}")
-                    except Exception as e:
-                        print(f"❌ Erreur lors de la suppression du fichier source : {e}")
+                        print(f" Fichier source supprimé : {pdf_path}")
+                except Exception as e:
+                    # Supprimer le fichier source si l'option est activée
+                    print(f" Erreur lors du traitement : {e}")
+
 
     def split_pdf(self, pdf_path, output_dir):
         doc = pymupdf.open(pdf_path)
@@ -50,18 +53,22 @@ class PDFProcessor:
 
         if len(split_indices) == 1:
             print(f"Aucun stabilo détecté, le fichier {pdf_path} ne sera pas découpé.")
-            return
+            return None
 
-        start = 0
-        for idx, end in enumerate(split_indices):
+        file_idx = 1
+        start = split_indices[0]
+        for end in split_indices[1:]:
+            print(f"PDF sera découpé en : {len(split_indices)} ")
             if start < end:
                 new_doc = pymupdf.open()  # Nouveau document PDF
                 for page_num in range(start, end):
                     new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)  # Ajouter la page au nouveau document
-                output_path = os.path.join(output_dir, f"split_{idx + 1}.pdf")
+                output_path = os.path.join(output_dir, f"split_{file_idx}.pdf")
                 new_doc.save(output_path)  # Sauvegarder le nouveau fichier PDF
                 print(f"PDF enregistré: {output_path}")
+                file_idx +=1
                 start = end
+        return len(split_indices)-1
 
     def detect_highlighter(self, image, pattern, debug=True):
         channels = image.n

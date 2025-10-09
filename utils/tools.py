@@ -1,5 +1,4 @@
-import json
-import os
+import json,os,time
 
 # Obtenir le chemin absolu du dossier du projet
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,19 +22,22 @@ class Tools:
                     "output_dir": ""
                 }
             }
-            self.save_patterns(default_patterns)
+            self.save_configs(default_patterns)
 
-    def load_patterns(self):
+    def load_configs(self,config_id=False):
         """Charge tous les patterns depuis le fichier JSON."""
         if os.path.exists(self.pattern_file):
             try:
                 with open(self.pattern_file, "r") as file:
-                    return json.load(file)
+                    config = json.load(file)
+                    if config_id :
+                        return config[config_id]
+                    return config
             except json.JSONDecodeError:
                 print("❌ Erreur : Le fichier JSON est mal formaté.")
         return {}
 
-    def save_patterns(self, patterns):
+    def save_configs(self, patterns):
         """Enregistre les patterns en écrasant l'ancien fichier, avec un backup propre."""
         backup_file = self.pattern_file + ".bak"
 
@@ -63,7 +65,7 @@ class Tools:
 
     def get_pattern(self, pattern_id):
         """Récupère un pattern par ID, sinon retourne le pattern par défaut."""
-        patterns = self.load_patterns()
+        patterns = self.load_configs()
         pattern_id = str(pattern_id)
 
         if pattern_id in patterns and len(patterns[pattern_id]["motif"]) != 0:
@@ -80,7 +82,7 @@ class Tools:
         - Accepte un nombre dynamique de champs à mettre à jour.
         - Vérifie le type des données pour éviter les erreurs.
         """
-        patterns = self.load_patterns()
+        patterns = self.load_configs()
         pattern_id = str(pattern_id)
 
         # Charger l'ancien pattern ou initialiser des valeurs par défaut
@@ -89,8 +91,54 @@ class Tools:
         # Mise à jour dynamique avec les valeurs fournies dans kwargs
         patterns[pattern_id] = {**old_pattern, **kwargs}
 
-        self.save_patterns(patterns)
+        self.save_configs(patterns)
 
+    def wait_for_copy_complete(self,filepath, stable_time=2, check_interval=1, max_wait=60):
+        """
+        Attend que la copie d'un fichier soit terminée avant de continuer.
+        Combine la vérification de la taille stable et la possibilité d'ouvrir le fichier.
+
+        Args:
+            filepath (str): chemin du fichier à vérifier.
+            stable_time (int): durée (en secondes) pendant laquelle la taille doit rester stable.
+            check_interval (int): délai entre chaque vérification.
+            max_wait (int): durée maximale d’attente avant d’abandonner.
+        """
+        last_size = -1
+        stable_counter = 0
+        waited = 0
+
+        while waited < max_wait:
+            try:
+                current_size = os.path.getsize(filepath)
+            except FileNotFoundError:
+                # Le fichier n'est pas encore totalement visible
+                time.sleep(check_interval)
+                waited += check_interval
+                continue
+
+            # Vérifie si la taille du fichier reste stable
+            if current_size == last_size:
+                stable_counter += check_interval
+            else:
+                stable_counter = 0
+                last_size = current_size
+
+            # Vérifie aussi si le fichier peut être ouvert sans erreur
+            try:
+                with open(filepath, "rb"):
+                    file_accessible = True
+            except (PermissionError, OSError):
+                file_accessible = False
+
+            if stable_counter >= stable_time and file_accessible:
+                return True  # Copie terminée et fichier lisible
+
+            time.sleep(check_interval)
+            waited += check_interval
+
+        print(f"[Watcher] ⚠️ Timeout : la copie de '{os.path.basename(filepath)}' semble bloquée.")
+        return False
 """
 # ==== Exemple d'utilisation ====
 tools = Tools()

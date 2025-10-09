@@ -34,7 +34,7 @@ class WatcherConfigMenu(QMenu):
         self.delete_source_checkbox.setStyleSheet("color: white;")
         
         # Charger l'état sauvegardé
-        patterns = self.tools.load_patterns()
+        patterns = self.tools.load_configs()
         if str(self.watcher_id) in patterns:
             delete_source = patterns[str(self.watcher_id)].get('delete_source', False)
             self.delete_source_checkbox.setChecked(delete_source)
@@ -64,8 +64,8 @@ class WatcherConfigMenu(QMenu):
         """Gère le changement d'état de la checkbox de suppression"""
         delete_source = bool(state)
         # Sauvegarder la préférence
-        patterns = self.tools.load_patterns()
+        patterns = self.tools.load_configs()
         if str(self.watcher_id) in patterns:
             patterns[str(self.watcher_id)]['delete_source'] = delete_source
-            self.tools.save_patterns(patterns)
+            self.tools.save_configs(patterns)
             print(f"✅ Préférence de suppression mise à jour : {delete_source}") 

@@ -188,10 +188,10 @@ class WatcherTable(QTableWidget):
 
             # Supprimer la configuration du watcher
             tools = Tools()
-            patterns = tools.load_patterns()
+            patterns = tools.load_configs()
             if str(watcher_id) in patterns:
                 del patterns[str(watcher_id)]
-                tools.save_patterns(patterns)
+                tools.save_configs(patterns)
                 print(f"✅ Configuration du watcher {watcher_id} supprimée")
         else:
             print(f"❌ Impossible de trouver le watcher {watcher_id}")
@@ -225,7 +225,7 @@ class WatcherTable(QTableWidget):
     def load_watchers_from_json(self):
         """Charge les watchers depuis un fichier JSON et les ajoute à l'interface."""
         try:
-            data = Tools().load_patterns()
+            data = Tools().load_configs()
 
             for id, watcher in data.items():
                 if id!="DEFAULT":

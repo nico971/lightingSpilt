@@ -2,6 +2,7 @@ import os
 import time
 import threading
 from logic.core import PDFProcessor
+from utils.tools import Tools
 
 class Watcher:
     """Surveille un dossier et traite les PDF dès qu'ils apparaissent en mode auto."""
@@ -11,7 +12,7 @@ class Watcher:
         self.output_dir = output_dir
         self.id = id
         self.auto_mode = auto_mode
-        self.processor = PDFProcessor(input_dir, output_dir,pattern=id,debug=False)
+        self.processor = PDFProcessor(input_dir, output_dir,pattern_id=id,debug=False)
         self.watching = False
         self.running = False
         self.thread = None
@@ -28,11 +29,20 @@ class Watcher:
 
             for file in new_files:
                 if file.lower().endswith(".pdf"):
-                    self.running = True
+                    file_path = os.path.join(self.input_dir, file)
                     print(f"[Watcher] Nouveau fichier détecté : {file}")
-                    time.sleep(20000)
-                    self.processor.split_pdf(os.path.join(self.input_dir, file), self.output_dir)
-                    self.running = False
+
+                    # Attente que la copie soit complète et le fichier lisible
+                    if Tools().wait_for_copy_complete(file_path):
+                        self.running = True
+                        print(f"[Watcher] Copie terminée, traitement du fichier : {file}")
+                        try:
+                            self.processor.split_pdf(file_path, self.output_dir)
+                        except Exception as e:
+                            print(f"[Watcher]  Erreur lors du traitement de {file} : {e}")
+                        self.running = False
+                    else:
+                        print(f"[Watcher]  Le fichier {file} n'a pas pu être validé (copie incomplète ?)")
 
             seen_files = current_files
 
