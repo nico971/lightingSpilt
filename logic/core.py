@@ -17,6 +17,7 @@ class PDFProcessor:
         self.delete_source = pattern_data.get("delete_source", False)
         self.input_dir = pattern_data.get("input_dir", "")
         self.output_dir = pattern_data.get("output_dir", "")
+        self.color_range = pattern_data.get("color_range", {"lower": [21, 60, 90], "upper": [48, 255, 255]})
 
     def process(self):
         """Lance le traitement sur tous les fichiers PDF du dossier source."""
@@ -44,8 +45,8 @@ class PDFProcessor:
             rect = page.rect
             clip_top_right = pymupdf.Rect(rect.width - 100, 0, rect.width, 100)
             clip_bas_left = pymupdf.Rect(0, rect.height - 100, 100, rect.height)
-            if self.detect_highlighter(page.get_pixmap(alpha=True, dpi=300, matrix=mat, clip=clip_top_right), pattern=self.pattern, debug=self.debug) or \
-                    self.detect_highlighter(page.get_pixmap(alpha=True, matrix=mat, clip=clip_bas_left), pattern=self.pattern, debug=self.debug):
+            if self.detect_highlighter(page.get_pixmap(alpha=False, dpi=300, matrix=mat, clip=clip_top_right), pattern=self.pattern, debug=self.debug) or \
+                    self.detect_highlighter(page.get_pixmap(alpha=False, matrix=mat, clip=clip_bas_left), pattern=self.pattern, debug=self.debug):
                 split_indices.append(i)
 
         split_indices = sorted(set(split_indices))
@@ -86,9 +87,9 @@ class PDFProcessor:
         hsv = cv2.cvtColor(img_np, cv2.COLOR_RGB2HSV)
 
         # Plage de couleurs pour le surlignage
-        lowerColor = np.array([21, 60, 90])
-        upperColor = np.array([48, 255, 255])
-        mask = cv2.inRange(hsv, lowerColor, upperColor)
+        lowercolor = np.array(self.color_range["lower"], dtype=np.uint8)
+        uppercolor = np.array(self.color_range["upper"], dtype=np.uint8)
+        mask = cv2.inRange(hsv, lowercolor, uppercolor)
 
         # Réduction des contours détectés en lignes minces (squelette)
         mask = self.thin_contour(mask)
